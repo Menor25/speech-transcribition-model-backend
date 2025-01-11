@@ -10,12 +10,15 @@ app = Flask(__name__, template_folder='templates', static_folder='templates/stat
 
 # Load Pre-trained Wave2Vec 2.0 Model
 print("Loading Wave2Vec 2.0 Model...")
-processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large-960h")
-model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-960h")
+# processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large-960h")
+# model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-960h")
+processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
+model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
 
 # Load Pre-trained NLP Model (e.g., BERT)
 print("Loading NLP Model...")
-nlp_pipeline = pipeline("text-classification", model="bhadresh-savani/bert-base-uncased-emotion")
+#nlp_pipeline = pipeline("text-classification", model="bhadresh-savani/bert-base-uncased-emotion")
+nlp_pipeline = pipeline("text-classification", model="distilbert-base-uncased")
 
 # Function for Speech Recognition
 def transcribe_audio(audio_path):
