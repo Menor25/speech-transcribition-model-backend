@@ -3,29 +3,30 @@ import torchaudio
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor, pipeline
 import torch
 from flask import Flask, render_template, request, jsonify
-import os  # Import the os module at the top of the file
+import os
 
 # Initialize Flask Application
 app = Flask(__name__, template_folder='templates', static_folder='templates/static')
 
-# Load Pre-trained Wave2Vec 2.0 Model
-print("Loading Wave2Vec 2.0 Model...")
-# processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large-960h")
-# model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-960h")
-processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
-model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
+# Lazy Loading Functions
+def get_speech_model():
+    print("Loading Wave2Vec 2.0 Model...")
+    processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
+    model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
+    return processor, model
 
-# Load Pre-trained NLP Model (e.g., BERT)
-print("Loading NLP Model...")
-#nlp_pipeline = pipeline("text-classification", model="bhadresh-savani/bert-base-uncased-emotion")
-nlp_pipeline = pipeline("text-classification", model="distilbert-base-uncased")
+def get_nlp_pipeline():
+    print("Loading NLP Model...")
+    nlp_pipeline = pipeline("text-classification", model="distilbert-base-uncased")
+    return nlp_pipeline
 
 # Function for Speech Recognition
 def transcribe_audio(audio_path):
+    processor, model = get_speech_model()
     # Load and preprocess the audio file
     waveform, sample_rate = torchaudio.load(audio_path)
     waveform = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)(waveform).squeeze()
-    
+
     # Tokenize and predict
     inputs = processor(waveform, sampling_rate=16000, return_tensors="pt", padding=True)
     with torch.no_grad():
@@ -36,6 +37,7 @@ def transcribe_audio(audio_path):
 
 # Function for NLP Intent Recognition
 def process_text(text):
+    nlp_pipeline = get_nlp_pipeline()
     return nlp_pipeline(text)
 
 # Flask Routes
@@ -62,14 +64,6 @@ def transcribe():
     # Render the transcription result on a new page
     return render_template('result.html', transcription=transcription)
 
-    # NLP Processing
-    nlp_result = process_text(transcription)
-
-    return jsonify({
-        "transcription": transcription,
-        "nlp_result": nlp_result
-    })
-
 @app.route('/predict_word', methods=['POST'])
 def predict_word():
     data = request.get_json()
@@ -85,15 +79,15 @@ def submit_feedback():
     try:
         rating = request.form['rating']
         feedback = request.form['feedback']
-        
+
         # Log or store the feedback (you can save this in a database or file)
         print(f"Rating: {rating}, Feedback: {feedback}")
-        
+
         # Redirect to a thank-you page or render a success message
         return render_template('thank_you.html', rating=rating, feedback=feedback)
     except Exception as e:
         return render_template('error.html', message="An error occurred while submitting your feedback.")
-    
+
 ALLOWED_EXTENSIONS = {'wav', 'mp3', 'm4a'}
 
 def allowed_file(filename):
