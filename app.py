@@ -6,7 +6,7 @@ from flask import Flask, render_template, request, jsonify
 import os  # Import the os module at the top of the file
 
 # Initialize Flask Application
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates', static_folder='templates/static')
 
 # Load Pre-trained Wave2Vec 2.0 Model
 print("Loading Wave2Vec 2.0 Model...")
