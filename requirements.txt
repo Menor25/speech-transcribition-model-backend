@@ -2,3 +2,4 @@ torch
 torchaudio
 transformers
 flask
+gunicorn

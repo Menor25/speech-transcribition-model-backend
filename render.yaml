@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: audio-transcription-app
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn -w 1 -b 0.0.0.0:5000 app:app"
+    plan: free
+    envVars:
+      - key: WEB_CONCURRENCY
+        value: "1"  # Limit concurrency to 1 process
+    memoryLimitMiB: 512  # Use free tier memory limit (512MiB)

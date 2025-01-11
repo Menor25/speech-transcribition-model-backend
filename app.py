@@ -8,17 +8,26 @@ import os
 # Initialize Flask Application
 app = Flask(__name__, template_folder='templates', static_folder='templates/static')
 
+# Global Cache for Models
+_speech_model = None
+_nlp_model = None
+
 # Lazy Loading Functions
 def get_speech_model():
-    print("Loading Wave2Vec 2.0 Model...")
-    processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
-    model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
-    return processor, model
+    global _speech_model
+    if _speech_model is None:
+        print("Loading Wave2Vec 2.0 Model...")
+        processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
+        model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
+        _speech_model = (processor, model)
+    return _speech_model
 
 def get_nlp_pipeline():
-    print("Loading NLP Model...")
-    nlp_pipeline = pipeline("text-classification", model="distilbert-base-uncased")
-    return nlp_pipeline
+    global _nlp_model
+    if _nlp_model is None:
+        print("Loading NLP Model...")
+        _nlp_model = pipeline("text-classification", model="distilbert-base-uncased")
+    return _nlp_model
 
 # Function for Speech Recognition
 def transcribe_audio(audio_path):
@@ -87,6 +96,9 @@ def submit_feedback():
         return render_template('thank_you.html', rating=rating, feedback=feedback)
     except Exception as e:
         return render_template('error.html', message="An error occurred while submitting your feedback.")
+
+# Limit upload size to 5MB
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5 MB limit
 
 ALLOWED_EXTENSIONS = {'wav', 'mp3', 'm4a'}
 
