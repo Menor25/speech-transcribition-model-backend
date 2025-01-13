@@ -4,3 +4,4 @@ transformers
 flask
 gunicorn
 waitress
+onnxruntime
