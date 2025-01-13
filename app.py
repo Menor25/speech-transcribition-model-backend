@@ -2,11 +2,11 @@
 import torchaudio
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor, pipeline
 import torch
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify
 import os
 
 # Initialize Flask Application
-app = Flask(__name__, template_folder='templates', static_folder='templates/static')
+app = Flask(__name__)
 
 # Global Cache for Models
 _speech_model = None
@@ -52,7 +52,7 @@ def process_text(text):
 # Flask Routes
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return jsonify({"message": "Backend API is running. The frontend is hosted separately."})
 
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
@@ -70,18 +70,18 @@ def transcribe():
     # Speech Recognition
     transcription = transcribe_audio(file_path)
 
-    # Render the transcription result on a new page
-    return render_template('result.html', transcription=transcription)
+    # Return the transcription result as JSON
+    return jsonify({"transcription": transcription})
 
-@app.route('/predict_word', methods=['POST'])
-def predict_word():
+@app.route('/process_text', methods=['POST'])
+def process_text_route():
     data = request.get_json()
-    context = data.get('context', "")
-    last_word = context.split(" ")[-1] if context else ""
+    text = data.get('text', "")
 
-    # Fetch word predictions based on last_word
-    predictions = get_word_predictions(last_word)  # Implement this function as needed
-    return jsonify(predictions)
+    # NLP Processing
+    nlp_result = process_text(text)
+
+    return jsonify({"nlp_result": nlp_result})
 
 @app.route('/submit_feedback', methods=['POST'])
 def submit_feedback():
@@ -89,13 +89,13 @@ def submit_feedback():
         rating = request.form['rating']
         feedback = request.form['feedback']
 
-        # Log or store the feedback (you can save this in a database or file)
+        # Log or store the feedback (e.g., save to database or log file)
         print(f"Rating: {rating}, Feedback: {feedback}")
 
-        # Redirect to a thank-you page or render a success message
-        return render_template('thank_you.html', rating=rating, feedback=feedback)
+        # Return success response
+        return jsonify({"message": "Feedback submitted successfully."})
     except Exception as e:
-        return render_template('error.html', message="An error occurred while submitting your feedback.")
+        return jsonify({"error": "An error occurred while submitting your feedback."}), 500
 
 # Limit upload size to 5MB
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5 MB limit
@@ -105,5 +105,6 @@ ALLOWED_EXTENSIONS = {'wav', 'mp3', 'm4a'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# if __name__ == '__main__':
-#     app.run(debug=True)
+if __name__ == '__main__':
+    from waitress import serve
+    serve(app, host="0.0.0.0", port=8080)
